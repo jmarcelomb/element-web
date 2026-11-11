@@ -118,6 +118,13 @@ jobs:
                       echo "VERSION=$(node -p "require('./apps/desktop/package.json').version")" >> "$GITHUB_ENV"
                   fi
 
+            - name: Disable pnpm auto-install before scripts
+              # pnpm 12 re-verifies node_modules before every `pnpm run` and, on
+              # mismatch, runs a full workspace install that includes apps/web's
+              # matrix-js-sdk git dependency, whose prepare script fails on Windows.
+              # The installer build only needs the filtered install below.
+              run: pnpm config set --location project verifyDepsBeforeRun false
+
             - name: Install desktop dependencies
               working-directory: apps/desktop
               # Filtered install like the upstream Windows job: this skips the root
@@ -127,15 +134,14 @@ jobs:
 
             - name: Bundle webapp into the desktop wrapper
               working-directory: apps/desktop
+              # The installer version comes from the VERSION env var in the build
+              # step (electron-builder reads it), so no set-version.ts needed here.
               run: |
                   tar -xzf ../web/dist/webapp.tar.gz -C ../web/
                   cp -r ../web/webapp webapp
                   cp ninho/config.json webapp/config.json
                   pnpm run asar-webapp
                   cp ninho/build.json variant.json
-                  node scripts/set-version.ts
-              env:
-                  VERSION: ${{ env.VERSION }}
 
             - name: Build installer
               working-directory: apps/desktop
