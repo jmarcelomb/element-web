@@ -1,8 +1,11 @@
 # Builds the Ninho Windows installer (x64): the Element Desktop Electron wrapper
 # bundling this fork's web app, with the config in apps/desktop/ninho/.
 #
-# Must run on Windows: electron-builder packages the OS it runs on and the
-# native modules have to match the target platform.
+# Two jobs, mirroring the upstream pipeline: a Linux job builds the webapp
+# (the full workspace install works there, unlike on Windows, where pnpm fails
+# to run the `prepare` script of the matrix-js-sdk git dependency), and a
+# Windows job downloads the webapp and packages the installer (electron-builder
+# must run on the OS it targets, and the native modules have to match).
 #
 # - workflow_dispatch: builds and uploads the installer as a workflow artifact.
 # - pushing a `ninho-v*` tag: also creates a GitHub release with the installer,
@@ -28,9 +31,59 @@ defaults:
         shell: bash
 
 jobs:
-    build:
+    webapp:
+        name: Build web app
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+              with:
+                  persist-credentials: false
+
+            - uses: pnpm/setup@fa36a5ef7dcdefc3a7cb25655c122e00cf6e636e # v3.1.2
+              with:
+                  cache: true
+                  install: false
+
+            - name: Determine version
+              run: |
+                  if [[ $GITHUB_REF_NAME == ninho-v* ]]; then
+                      echo "VERSION=${GITHUB_REF_NAME#ninho-v}" >> "$GITHUB_ENV"
+                  else
+                      echo "VERSION=$(node -p "require('./apps/desktop/package.json').version")" >> "$GITHUB_ENV"
+                  fi
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+              # No browsers needed: this workflow never runs Playwright.
+              env:
+                  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+
+            - name: Build web app
+              working-directory: apps/web
+              run: pnpm exec webpack-cli --mode production
+              env:
+                  VERSION: ${{ env.VERSION }}
+
+            - name: Package webapp
+              working-directory: apps/web
+              # Drop any local config.json: the Windows job injects the Ninho config.
+              run: |
+                  rm -f webapp/config.json
+                  mkdir -p dist
+                  tar -czf dist/webapp.tar.gz webapp
+
+            - name: Upload webapp artifact
+              uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+              with:
+                  name: ninho-webapp
+                  path: apps/web/dist/webapp.tar.gz
+                  retention-days: 3
+                  if-no-files-found: error
+
+    installer:
         name: Build Windows x64 installer
         runs-on: windows-latest
+        needs: webapp
         steps:
             # Tweak line endings to make nx happy, workaround for https://github.com/nrwl/nx/issues/35828
             - name: Configure git line endings
@@ -42,17 +95,17 @@ jobs:
               with:
                   persist-credentials: false
 
+            - name: Download webapp
+              uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+              with:
+                  name: ninho-webapp
+                  path: apps/web/dist/
+
             - uses: pnpm/setup@fa36a5ef7dcdefc3a7cb25655c122e00cf6e636e # v3.1.2
               with:
                   node-version-file: apps/desktop/.node-version
                   cache: true
                   install: false
-
-            - name: Install dependencies
-              run: pnpm install --frozen-lockfile
-              # No browsers needed: this workflow never runs Playwright.
-              env:
-                  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
 
             - name: Determine version
               run: |
@@ -62,20 +115,24 @@ jobs:
                       echo "VERSION=$(node -p "require('./apps/desktop/package.json').version")" >> "$GITHUB_ENV"
                   fi
 
-            - name: Build web app
-              working-directory: apps/web
-              run: pnpm exec webpack-cli --mode production
-              env:
-                  VERSION: ${{ env.VERSION }}
+            - name: Install desktop dependencies
+              working-directory: apps/desktop
+              # Filtered install like the upstream Windows job: this skips the root
+              # postinstall and apps/web's git dependencies, whose prepare script
+              # breaks pnpm on Windows.
+              run: pnpm install --frozen-lockfile --filter element-desktop
 
-            - name: Bundle web app into the desktop wrapper
+            - name: Bundle webapp into the desktop wrapper
               working-directory: apps/desktop
               run: |
+                  tar -xzf ../web/dist/webapp.tar.gz -C ../web/
                   cp -r ../web/webapp webapp
                   cp ninho/config.json webapp/config.json
                   pnpm run asar-webapp
                   cp ninho/build.json variant.json
                   node scripts/set-version.ts
+              env:
+                  VERSION: ${{ env.VERSION }}
 
             - name: Build installer
               working-directory: apps/desktop
