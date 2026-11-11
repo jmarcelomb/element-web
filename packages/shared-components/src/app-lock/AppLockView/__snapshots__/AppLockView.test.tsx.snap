@@ -1,0 +1,202 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AppLockView > Storybook snapshots > renders the busy state 1`] = `
+<div>
+  <div
+    class="AppLockView-module_container"
+    data-testid="app-lock-view"
+  >
+    <div
+      class="Flex-module_flex AppLockView-module_card"
+      style="--mx-flex-display: flex; --mx-flex-direction: column; --mx-flex-align: center; --mx-flex-justify: start; --mx-flex-gap: var(--cpd-space-4x); --mx-flex-wrap: nowrap;"
+    >
+      <div
+        class="AppLockView-module_iconWrap"
+      >
+        <svg
+          fill="currentColor"
+          height="32px"
+          viewBox="0 0 24 24"
+          width="32px"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M6 22q-.824 0-1.412-.587A1.93 1.93 0 0 1 4 20V10q0-.825.588-1.412A1.93 1.93 0 0 1 6 8h1V6q0-2.075 1.463-3.537Q9.926 1 12 1q2.075 0 3.537 1.463Q17 3.925 17 6v2h1q.824 0 1.413.588Q20 9.175 20 10v10q0 .824-.587 1.413A1.93 1.93 0 0 1 18 22zM9 8h6V6q0-1.25-.875-2.125A2.9 2.9 0 0 0 12 3q-1.25 0-2.125.875A2.9 2.9 0 0 0 9 6z"
+          />
+        </svg>
+      </div>
+      <h1
+        class="_typography_6v6n8_153 _font-heading-md-semibold_6v6n8_112"
+      >
+        Element is locked
+      </h1>
+      <p
+        class="_typography_6v6n8_153 _font-body-md-regular_6v6n8_50"
+      >
+        Enter your code to unlock
+      </p>
+      <form
+        class="AppLockView-module_form"
+      >
+        <input
+          aria-invalid="false"
+          aria-label="Code"
+          autocomplete="new-password"
+          class="AppLockView-module_input"
+          data-testid="app-lock-input"
+          disabled=""
+          name="code"
+          type="password"
+        />
+        <svg
+          class="_icon_1855a_18"
+          fill="currentColor"
+          height="1em"
+          style="width: 20px; height: 20px;"
+          viewBox="0 0 24 24"
+          width="1em"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            clip-rule="evenodd"
+            d="M12 4.031a8 8 0 1 0 8 8 1 1 0 0 1 2 0c0 5.523-4.477 10-10 10s-10-4.477-10-10 4.477-10 10-10a1 1 0 1 1 0 2"
+            fill-rule="evenodd"
+          />
+        </svg>
+      </form>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`AppLockView > Storybook snapshots > renders the default state 1`] = `
+<div>
+  <div
+    class="AppLockView-module_container"
+    data-testid="app-lock-view"
+  >
+    <div
+      class="Flex-module_flex AppLockView-module_card"
+      style="--mx-flex-display: flex; --mx-flex-direction: column; --mx-flex-align: center; --mx-flex-justify: start; --mx-flex-gap: var(--cpd-space-4x); --mx-flex-wrap: nowrap;"
+    >
+      <div
+        class="AppLockView-module_iconWrap"
+      >
+        <svg
+          fill="currentColor"
+          height="32px"
+          viewBox="0 0 24 24"
+          width="32px"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M6 22q-.824 0-1.412-.587A1.93 1.93 0 0 1 4 20V10q0-.825.588-1.412A1.93 1.93 0 0 1 6 8h1V6q0-2.075 1.463-3.537Q9.926 1 12 1q2.075 0 3.537 1.463Q17 3.925 17 6v2h1q.824 0 1.413.588Q20 9.175 20 10v10q0 .824-.587 1.413A1.93 1.93 0 0 1 18 22zM9 8h6V6q0-1.25-.875-2.125A2.9 2.9 0 0 0 12 3q-1.25 0-2.125.875A2.9 2.9 0 0 0 9 6z"
+          />
+        </svg>
+      </div>
+      <h1
+        class="_typography_6v6n8_153 _font-heading-md-semibold_6v6n8_112"
+      >
+        Element is locked
+      </h1>
+      <p
+        class="_typography_6v6n8_153 _font-body-md-regular_6v6n8_50"
+      >
+        Enter your code to unlock
+      </p>
+      <form
+        class="AppLockView-module_form"
+      >
+        <input
+          aria-invalid="false"
+          aria-label="Code"
+          autocomplete="new-password"
+          class="AppLockView-module_input"
+          data-testid="app-lock-input"
+          name="code"
+          type="password"
+        />
+        <button
+          class="_button_1nw83_8 AppLockView-module_button"
+          data-kind="primary"
+          data-size="lg"
+          role="button"
+          tabindex="0"
+          type="submit"
+        >
+          Unlock
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+`;
+
+exports[`AppLockView > Storybook snapshots > renders the wrong code state 1`] = `
+<div>
+  <div
+    class="AppLockView-module_container"
+    data-testid="app-lock-view"
+  >
+    <div
+      class="Flex-module_flex AppLockView-module_card"
+      style="--mx-flex-display: flex; --mx-flex-direction: column; --mx-flex-align: center; --mx-flex-justify: start; --mx-flex-gap: var(--cpd-space-4x); --mx-flex-wrap: nowrap;"
+    >
+      <div
+        class="AppLockView-module_iconWrap"
+      >
+        <svg
+          fill="currentColor"
+          height="32px"
+          viewBox="0 0 24 24"
+          width="32px"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M6 22q-.824 0-1.412-.587A1.93 1.93 0 0 1 4 20V10q0-.825.588-1.412A1.93 1.93 0 0 1 6 8h1V6q0-2.075 1.463-3.537Q9.926 1 12 1q2.075 0 3.537 1.463Q17 3.925 17 6v2h1q.824 0 1.413.588Q20 9.175 20 10v10q0 .824-.587 1.413A1.93 1.93 0 0 1 18 22zM9 8h6V6q0-1.25-.875-2.125A2.9 2.9 0 0 0 12 3q-1.25 0-2.125.875A2.9 2.9 0 0 0 9 6z"
+          />
+        </svg>
+      </div>
+      <h1
+        class="_typography_6v6n8_153 _font-heading-md-semibold_6v6n8_112"
+      >
+        Element is locked
+      </h1>
+      <p
+        class="_typography_6v6n8_153 _font-body-md-regular_6v6n8_50"
+      >
+        Enter your code to unlock
+      </p>
+      <form
+        class="AppLockView-module_form"
+      >
+        <input
+          aria-invalid="true"
+          aria-label="Code"
+          autocomplete="new-password"
+          class="AppLockView-module_input"
+          data-testid="app-lock-input"
+          name="code"
+          type="password"
+        />
+        <p
+          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 AppLockView-module_error"
+          role="alert"
+        >
+          Wrong code. Try again.
+        </p>
+        <button
+          class="_button_1nw83_8 AppLockView-module_button"
+          data-kind="primary"
+          data-size="lg"
+          role="button"
+          tabindex="0"
+          type="submit"
+        >
+          Unlock
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+`;

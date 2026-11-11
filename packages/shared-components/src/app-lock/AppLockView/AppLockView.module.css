@@ -1,0 +1,78 @@
+/*
+ * Copyright 2026 Marcelo Borges
+ *
+ * SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial
+ * Please see LICENSE files in the repository root for full details.
+ */
+
+.container {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: var(--cpd-color-bg-canvas-default);
+
+    /* Keep the card readable on narrow windows */
+    padding: var(--cpd-space-6x);
+}
+
+.card {
+    width: min(360px, 100%);
+
+    padding: var(--cpd-space-8x) var(--cpd-space-6x);
+    border-radius: 8px;
+    border: 1px solid var(--cpd-color-border-interactive-secondary);
+    background: var(--cpd-color-bg-subtle-secondary);
+
+    text-align: center;
+}
+
+.iconWrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--cpd-color-bg-subtle-primary);
+    color: var(--cpd-color-icon-primary);
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--cpd-space-2x);
+    align-items: stretch;
+
+    width: 100%;
+    margin-top: var(--cpd-space-2x);
+}
+
+.input {
+    width: 100%;
+    padding: var(--cpd-space-2x) var(--cpd-space-3x);
+
+    border-radius: 8px;
+    border: 1px solid var(--cpd-color-border-interactive-primary);
+    background: var(--cpd-color-bg-canvas-default);
+    color: var(--cpd-color-text-primary);
+    font: inherit;
+
+    &:focus-visible {
+        outline: 2px solid var(--cpd-color-border-interactive-primary);
+        outline-offset: -1px;
+    }
+}
+
+.error {
+    color: var(--cpd-color-text-critical-primary);
+}
+
+.button {
+    margin-top: var(--cpd-space-2x);
+}

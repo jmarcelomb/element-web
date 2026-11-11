@@ -38,6 +38,13 @@
         "view_source": "View source",
         "yes": "Yes"
     },
+    "app_lock": {
+        "locked_title": "%(brand)s is locked",
+        "enter_code_to_unlock": "Enter your code to unlock",
+        "code_label": "Code",
+        "unlock": "Unlock",
+        "wrong_code": "Wrong code. Try again."
+    },
     "common": {
         "attachment": "Attachment",
         "encryption_enabled": "Encryption enabled",
