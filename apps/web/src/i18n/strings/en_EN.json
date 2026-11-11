@@ -148,6 +148,27 @@
         "pseudonymous_usage_data": "Help us identify issues and improve %(analyticsOwner)s by sharing anonymous usage data. To understand how people use multiple devices, we'll generate a random identifier, shared by your devices.",
         "shared_data_heading": "Any of the following data may be shared:"
     },
+    "app_lock": {
+        "change_code": "Change code",
+        "code_mismatch": "Codes don't match.",
+        "code_too_short": "Use at least %(min)s characters.",
+        "confirm_code": "Confirm code",
+        "disable": "Turn off",
+        "enable": "Enable app lock",
+        "enable_description": "Require a code to unlock the app after it has been idle, and when it starts.",
+        "enable_prompt_current": "Enter your current code to continue.",
+        "enter_code": "Enter code",
+        "lock_now": "Lock now",
+        "set_code_description": "You'll need this code to unlock the app. It's stored only on this device and can't be recovered.",
+        "set_code_title": "Set an app lock code",
+        "timeout": "When to lock",
+        "timeout_15_minutes": "After 15 minutes",
+        "timeout_1_hour": "After 1 hour",
+        "timeout_1_minute": "After 1 minute",
+        "timeout_8_hours": "After 8 hours",
+        "title": "App lock",
+        "wrong_code": "Wrong code. Try again."
+    },
     "auth": {
         "3pid_in_use": "That e-mail address or phone number is already in use.",
         "account_clash": "Your new account (%(newAccountId)s) is registered, but you're already logged into a different account (%(loggedInUserId)s).",

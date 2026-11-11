@@ -33,6 +33,7 @@ import { SettingsSection } from "../../shared/SettingsSection";
 import { SettingsSubsection, SettingsSubsectionText } from "../../shared/SettingsSubsection";
 import { useOwnDevices } from "../../devices/useOwnDevices";
 import { DiscoverySettings } from "../../discovery/DiscoverySettings";
+import { AppLockSettingsSection } from "../../appLock/AppLockSettingsSection";
 import SetIntegrationManager from "../../SetIntegrationManager";
 
 interface IIgnoredUserProps {
@@ -377,6 +378,7 @@ export default class SecurityUserSettingsTab extends React.Component<EmptyObject
                     {secureBackup}
                     {eventIndex}
                 </SettingsSection>
+                <AppLockSettingsSection />
                 {privacySection}
                 {advancedSection}
             </SettingsTab>

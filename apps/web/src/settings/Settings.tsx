@@ -373,6 +373,8 @@ export interface Settings {
     "blockInvites": IBaseSetting<boolean>;
     "Developer.elementCallUrl": IBaseSetting<string>;
     "Developer.elementCallMockComponent": IBaseSetting<boolean>;
+    "appLockEnabled": IBaseSetting<boolean>;
+    "appLockTimeout": IBaseSetting<"1m" | "15m" | "1h" | "8h">;
     "RoomList.CustomSectionData": IBaseSetting<CustomSectionsData>;
     "RoomList.OrderedCustomSections": IBaseSetting<ReorderableSection[]>;
     "RoomList.SectionExpansionState": IBaseSetting<SectionExpansionState>;
@@ -1558,5 +1560,22 @@ export const SETTINGS: Settings = {
         supportedLevels: [SettingLevel.DEVICE],
         displayName: _td("devtools|settings|elementCallMockComponent"),
         default: false,
+    },
+    "appLockEnabled": {
+        supportedLevels: LEVELS_DEVICE_ONLY_SETTINGS,
+        displayName: _td("app_lock|enable"),
+        description: _td("app_lock|enable_description"),
+        default: false,
+    },
+    "appLockTimeout": {
+        supportedLevels: LEVELS_DEVICE_ONLY_SETTINGS,
+        displayName: _td("app_lock|timeout"),
+        options: [
+            { value: "1m", label: _td("app_lock|timeout_1_minute") },
+            { value: "15m", label: _td("app_lock|timeout_15_minutes") },
+            { value: "1h", label: _td("app_lock|timeout_1_hour") },
+            { value: "8h", label: _td("app_lock|timeout_8_hours") },
+        ],
+        default: "1h",
     },
 };
