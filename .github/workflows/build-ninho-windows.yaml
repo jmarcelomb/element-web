@@ -1,0 +1,102 @@
+# Builds the Ninho Windows installer (x64): the Element Desktop Electron wrapper
+# bundling this fork's web app, with the config in apps/desktop/ninho/.
+#
+# Must run on Windows: electron-builder packages the OS it runs on and the
+# native modules have to match the target platform.
+#
+# - workflow_dispatch: builds and uploads the installer as a workflow artifact.
+# - pushing a `ninho-v*` tag: also creates a GitHub release with the installer,
+#   using the tag as the app version (tag must be `ninho-v` + valid semver,
+#   e.g. ninho-v1.12.32, because Squirrel parses it as semver).
+#
+# The build is unsigned, so Windows SmartScreen will warn on first launch
+# ("More info" -> "Run anyway").
+
+name: Build Ninho Windows installer
+
+on:
+    workflow_dispatch:
+    push:
+        tags:
+            - "ninho-v*"
+
+permissions:
+    contents: write # required to create the release and upload the installer
+
+defaults:
+    run:
+        shell: bash
+
+jobs:
+    build:
+        name: Build Windows x64 installer
+        runs-on: windows-latest
+        steps:
+            # Tweak line endings to make nx happy, workaround for https://github.com/nrwl/nx/issues/35828
+            - name: Configure git line endings
+              run: |
+                  git config --system core.autocrlf false
+                  git config --system core.eol lf
+
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+              with:
+                  persist-credentials: false
+
+            - uses: pnpm/setup@fa36a5ef7dcdefc3a7cb25655c122e00cf6e636e # v3.1.2
+              with:
+                  node-version-file: apps/desktop/.node-version
+                  cache: true
+                  install: false
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+              # No browsers needed: this workflow never runs Playwright.
+              env:
+                  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+
+            - name: Determine version
+              run: |
+                  if [[ $GITHUB_REF_NAME == ninho-v* ]]; then
+                      echo "VERSION=${GITHUB_REF_NAME#ninho-v}" >> "$GITHUB_ENV"
+                  else
+                      echo "VERSION=$(node -p "require('./apps/desktop/package.json').version")" >> "$GITHUB_ENV"
+                  fi
+
+            - name: Build web app
+              working-directory: apps/web
+              run: pnpm exec webpack-cli --mode production
+              env:
+                  VERSION: ${{ env.VERSION }}
+
+            - name: Bundle web app into the desktop wrapper
+              working-directory: apps/desktop
+              run: |
+                  cp -r ../web/webapp webapp
+                  cp ninho/config.json webapp/config.json
+                  pnpm run asar-webapp
+                  cp ninho/build.json variant.json
+                  node scripts/set-version.ts
+
+            - name: Build installer
+              working-directory: apps/desktop
+              run: pnpm run build --publish never -w squirrel
+              env:
+                  VARIANT_PATH: variant.json
+                  VERSION: ${{ env.VERSION }}
+
+            - name: Upload installer artifact
+              uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+              with:
+                  name: ninho-windows-x64
+                  path: apps/desktop/dist/squirrel-windows*/*Setup*.exe
+                  if-no-files-found: error
+
+            - name: Create release and attach installer
+              if: startsWith(github.ref, 'refs/tags/ninho-v')
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: |
+                  gh release create "$GITHUB_REF_NAME" \
+                      --title "Ninho ${GITHUB_REF_NAME#ninho-}" \
+                      --generate-notes \
+                      apps/desktop/dist/squirrel-windows*/*Setup*.exe

@@ -1,0 +1,7 @@
+{
+    "appId": "dev.marceloborges.ninho",
+    "name": "ninho-desktop",
+    "productName": "Ninho",
+    "description": "Ninho: private family chat",
+    "protocols": ["io.element.ninho", "element"]
+}
