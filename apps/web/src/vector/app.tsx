@@ -33,6 +33,8 @@ import RoomAvatar from "../components/views/avatars/RoomAvatar";
 import { ModuleNotificationDecoration } from "../modules/components/ModuleNotificationDecoration";
 import Login from "../Login.ts";
 import { startOAuthLogin } from "../utils/oauth/authorize.ts";
+import AppLock from "../app-lock/AppLock";
+import AppLockOverlay from "../app-lock/AppLockOverlay";
 
 // oxlint-disable-next-line node/no-process-env
 logger.log(`Application is running in ${process.env.NODE_ENV} mode`);
@@ -98,6 +100,11 @@ export async function loadApp(urlParams: URLParams, matrixChatRef: React.Ref<Mat
 
     initRouting();
     const platform = PlatformPeg.get();
+
+    // Start the app lock before anything else renders, so an enabled lock covers the whole
+    // startup (the app starts locked, WhatsApp-style).
+    AppLock.start();
+    AppLockOverlay.start();
 
     const urlWithoutQuery = window.location.protocol + "//" + window.location.host + window.location.pathname;
     logger.log("Vector starting at " + urlWithoutQuery);
