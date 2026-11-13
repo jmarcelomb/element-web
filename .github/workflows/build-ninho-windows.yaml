@@ -157,12 +157,37 @@ jobs:
                   path: apps/desktop/dist/squirrel-windows*/*Setup*.exe
                   if-no-files-found: error
 
-            - name: Create release and attach installer
+            - name: Create release, attach installer and publish update feed
               if: startsWith(github.ref, 'refs/tags/ninho-v')
               env:
                   GH_TOKEN: ${{ github.token }}
+                  REPO: ${{ github.repository }}
               run: |
+                  cd apps/desktop/dist/squirrel-windows*/
+
+                  # Squirrel fetches win32/x64/RELEASES from the update feed and downloads the
+                  # nupkg from the absolute URL in the entry (Squirrel's ReleaseEntry parser
+                  # supports absolute HTTP URLs in the filename field).
+                  NUPKG=$(ls *-full.nupkg)
+                  SHA1=$(sha1sum "$NUPKG" | cut -d' ' -f1)
+                  SIZE=$(stat -c%s "$NUPKG")
+                  echo "$SHA1 https://github.com/$REPO/releases/download/$GITHUB_REF_NAME/$NUPKG $SIZE" > RELEASES
+
                   gh release create "$GITHUB_REF_NAME" \
                       --title "Ninho ${GITHUB_REF_NAME#ninho-}" \
                       --generate-notes \
-                      apps/desktop/dist/squirrel-windows*/*Setup*.exe
+                      "$NUPKG" *Setup*.exe
+
+                  # Publish the feed on the ninho-update branch: raw.githubusercontent serves it
+                  # at ${update_base_url}win32/x64/RELEASES (update_base_url is baked into the
+                  # bundled Ninho config).
+                  if ! git ls-remote --heads origin ninho-update | grep -q .; then
+                      DEFAULT_SHA=$(gh api "repos/$REPO/git/ref/heads/develop" --jq .object.sha)
+                      gh api --method POST "repos/$REPO/git/refs" -f ref=refs/heads/ninho-update -f sha="$DEFAULT_SHA"
+                  fi
+                  FEED_SHA=$(gh api "repos/$REPO/contents/win32/x64/RELEASES?ref=ninho-update" --jq .sha 2>/dev/null || true)
+                  ARGS=(--method PUT "repos/$REPO/contents/win32/x64/RELEASES" -f message="Ninho update feed $GITHUB_REF_NAME" -f content="$(base64 -w0 RELEASES)" -f branch=ninho-update)
+                  if [ -n "$FEED_SHA" ]; then
+                      ARGS+=(-f sha="$FEED_SHA")
+                  fi
+                  gh api "${ARGS[@]}"

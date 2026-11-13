@@ -9,5 +9,6 @@
         }
     },
     "brand": "Ninho",
-    "default_country_code": "BR"
+    "default_country_code": "BR",
+    "update_base_url": "https://raw.githubusercontent.com/jmarcelomb/element-web/ninho-update/"
 }
