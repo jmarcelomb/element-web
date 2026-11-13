@@ -64,6 +64,7 @@ import { ElementCallMemberEventType } from "../../../../call-types";
 import { SDKContext } from "../../../../contexts/SDKContext";
 import { SDKContextClass } from "../../../../contexts/SDKContextClass.ts";
 import AppLock, { AppLockState } from "../../../../app-lock/AppLock";
+import * as verifier from "../../../../app-lock/verifier";
 
 vi.mock("../../../../utils/ShieldUtils");
 vi.mock("../../../../hooks/right-panel/useCurrentPhase", () => ({
@@ -134,6 +135,12 @@ describe("RoomHeader", () => {
         // Individual tests can override this when they need a specific Call object
         vi.spyOn(CallStore.instance, "getCall").mockReturnValue(null);
         vi.spyOn(CallStore.instance, "getConfiguredRTCTransports").mockReturnValue([]);
+
+        // vi.resetAllMocks() in afterEach disarms the module-level verifier mocks; re-arm
+        // them so any verify-dependent behaviour added later doesn't fail confusingly.
+        vi.mocked(verifier.setAppLockCode).mockResolvedValue(undefined);
+        vi.mocked(verifier.verifyAppLockCode).mockResolvedValue(true);
+        vi.mocked(verifier.clearAppLockCode).mockReturnValue(undefined);
 
         // Reset the mock RoomViewStore
         mockRoomViewStore.isViewingCall.mockReturnValue(false);
