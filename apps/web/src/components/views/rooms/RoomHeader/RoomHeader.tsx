@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR GPL-3.0-only OR LicenseRef-Element-Com
 Please see LICENSE files in the repository root for full details.
 */
 
-import React, { type JSX, useCallback, useContext, useState } from "react";
+import React, { type JSX, useCallback, useContext, useState, useSyncExternalStore } from "react";
 import { Text, Button, IconButton, Menu, MenuItem, Tooltip } from "@vector-im/compound-web";
 import VideoCallIcon from "@vector-im/compound-design-tokens/assets/web/icons/video-call-solid";
 import VoiceCallIcon from "@vector-im/compound-design-tokens/assets/web/icons/voice-call-solid";
@@ -15,6 +15,7 @@ import PopOutIcon from "@vector-im/compound-design-tokens/assets/web/icons/pop-o
 import PopInIcon from "@vector-im/compound-design-tokens/assets/web/icons/pop-in";
 import CloseCallIcon from "@vector-im/compound-design-tokens/assets/web/icons/close";
 import ThreadsIcon from "@vector-im/compound-design-tokens/assets/web/icons/threads-solid";
+import LockSolidIcon from "@vector-im/compound-design-tokens/assets/web/icons/lock-solid";
 import RoomInfoIcon from "@vector-im/compound-design-tokens/assets/web/icons/info-solid";
 import NotificationsIcon from "@vector-im/compound-design-tokens/assets/web/icons/notifications-solid";
 import VerifiedIcon from "@vector-im/compound-design-tokens/assets/web/icons/verified";
@@ -59,6 +60,7 @@ import { LocalRoom } from "../../../../models/LocalRoom.ts";
 import { useIsEncrypted } from "../../../../hooks/useIsEncrypted.ts";
 import { useUserStatus } from "../../../../hooks/useUserStatus.ts";
 import { SDKContext } from "../../../../contexts/SDKContext.ts";
+import AppLock, { AppLockState } from "../../../../app-lock/AppLock.ts";
 
 function RoomHeaderButtons({ room, extraButtons }: { room: Room; extraButtons?: JSX.Element }): JSX.Element {
     const sdkContext = useContext(SDKContext);
@@ -304,6 +306,7 @@ function RoomHeaderButtons({ room, extraButtons }: { room: Room; extraButtons?: 
 
     const roomContext = useScopedRoomContext("mainSplitContentType");
     const isVideoRoom = calcIsVideoRoom(room);
+    const appLockState = useSyncExternalStore(AppLock.subscribe, AppLock.getState);
     const showChatButton =
         isVideoRoom ||
         roomContext.mainSplitContentType === MainSplitContentType.MaximisedWidget ||
@@ -325,6 +328,20 @@ function RoomHeaderButtons({ room, extraButtons }: { room: Room; extraButtons?: 
             )}
 
             {showChatButton && <VideoRoomChatButton room={room} />}
+
+            {appLockState !== AppLockState.Disabled && (
+                <Tooltip label={_t("app_lock|lock_now")}>
+                    <IconButton
+                        onClick={(evt) => {
+                            evt.stopPropagation();
+                            AppLock.lock();
+                        }}
+                        aria-label={_t("app_lock|lock_now")}
+                    >
+                        <LockSolidIcon />
+                    </IconButton>
+                </Tooltip>
+            )}
 
             <Tooltip label={_t("common|threads")}>
                 <IconButton

@@ -74,9 +74,9 @@ class AppLock {
         this.emit();
     }
 
-    public getState(): AppLockState {
+    public getState = (): AppLockState => {
         return this.state;
-    }
+    };
 
     /** Subscribes to state changes, for useSyncExternalStore. Returns an unsubscribe function. */
     public subscribe = (listener: () => void): (() => void) => {

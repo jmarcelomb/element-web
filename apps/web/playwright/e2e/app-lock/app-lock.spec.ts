@@ -5,7 +5,7 @@
  * Please see LICENSE files in the repository root for full details.
  */
 
-import { rejectToast } from "@element-hq/element-web-playwright-common";
+import { rejectToast, closeReleaseAnnouncementIfExists } from "@element-hq/element-web-playwright-common";
 
 import { type Page, expect } from "@playwright/test";
 
@@ -64,12 +64,43 @@ test.describe("App lock", () => {
         await expect(lockScreen).not.toBeVisible();
     });
 
+    test("should lock via the room header button", async ({ app, page }) => {
+        // The lock button lives in the room header, so a room must be open
+        await app.client.createRoom({ name: "App lock room" });
+        await closeReleaseAnnouncementIfExists(page, "Introducing Sections");
+        await app.viewRoomByName("App lock room");
+
+        await app.settings.openUserSettings("Security");
+        const tab = page.locator(".mx_UserSettingsDialog");
+
+        await tab.getByRole("button", { name: "Enable app lock" }).click();
+        await setCode(page, "1234");
+
+        // Close settings so the room header is reachable and the header button is the only
+        // "Lock now" button on screen
+        await tab.getByRole("button", { name: "Close dialog", exact: true }).click();
+        await expect(tab).not.toBeVisible();
+
+        await page.getByRole("button", { name: "Lock now" }).click();
+
+        const lockScreen = page.getByTestId("app-lock-view");
+        await expect(lockScreen).toBeVisible();
+
+        await lockScreen.getByLabel("Code").fill("1234");
+        await lockScreen.getByRole("button", { name: "Unlock" }).click();
+        await expect(lockScreen).not.toBeVisible();
+    });
+
     test("should lock the app on startup when enabled", async ({ app, page }) => {
         await app.settings.openUserSettings("Security");
         const tab = page.locator(".mx_UserSettingsDialog");
 
         await tab.getByRole("button", { name: "Enable app lock" }).click();
         await setCode(page, "1234");
+
+        // Wait for enable() to complete (the verifier write involves 600k PBKDF2 iterations)
+        // before reloading, or the startup lock may not find its state persisted yet.
+        await expect(tab.getByRole("button", { name: "Lock now" })).toBeVisible();
 
         // Reload: the app must come back locked.
         await page.reload();
