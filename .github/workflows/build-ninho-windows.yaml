@@ -7,10 +7,17 @@
 # Windows job downloads the webapp and packages the installer (electron-builder
 # must run on the OS it targets, and the native modules have to match).
 #
-# - workflow_dispatch: builds and uploads the installer as a workflow artifact.
-# - pushing a `ninho-v*` tag: also creates a GitHub release with the installer,
-#   using the tag as the app version (tag must be `ninho-v` + valid semver,
-#   e.g. ninho-v1.12.32, because Squirrel parses it as semver).
+# Triggers:
+# - pushing a `ninho-v*` tag: builds that tag and creates a GitHub release with
+#   the installer, using the tag as the app version (tag must be `ninho-v` +
+#   valid semver, e.g. ninho-v1.12.32, because Squirrel parses it as semver).
+# - hourly schedule: self-healing fallback that builds the latest `ninho-v*`
+#   tag unless its release already exists. This exists because GitHub's
+#   push-event pipeline for this repo silently stopped delivering tag pushes
+#   (Nov 2026); scheduled runs go through a separate scheduler, so releases
+#   still get built when tag pushes are dropped.
+# - workflow_dispatch: builds whatever ref it is dispatched on — a `ninho-v*`
+#   tag (full release) or a branch (artifact-only build, no release).
 #
 # The build is unsigned, so Windows SmartScreen will warn on first launch
 # ("More info" -> "Run anyway").
@@ -19,6 +26,8 @@ name: Build Ninho Windows installer
 
 on:
     workflow_dispatch:
+    schedule:
+        - cron: "23 * * * *"
     push:
         tags:
             - "ninho-v*"
@@ -31,13 +40,50 @@ defaults:
         shell: bash
 
 jobs:
+    gate:
+        name: Resolve release target
+        runs-on: ubuntu-latest
+        outputs:
+            tag: ${{ steps.resolve.outputs.tag }}
+            skip: ${{ steps.resolve.outputs.skip }}
+        steps:
+            - name: Resolve which tag to build (if any)
+              id: resolve
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  REPO: ${{ github.repository }}
+              run: |
+                  if [[ $GITHUB_REF_NAME == ninho-v* ]]; then
+                      # Tag push (or dispatch on a tag ref): always build it.
+                      echo "tag=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+                      echo "skip=false" >> "$GITHUB_OUTPUT"
+                  elif [[ $GITHUB_EVENT_NAME == schedule ]]; then
+                      # Hourly sweep: build the latest ninho-v* tag unless its release
+                      # already exists (keeps the cron idempotent).
+                      TAG=$(gh api "repos/$REPO/git/matching-refs/tags/ninho-v" --jq '.[].ref' | sed 's|refs/tags/||' | sort -V | tail -1)
+                      if [ -n "$TAG" ] && ! gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+                          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+                          echo "skip=false" >> "$GITHUB_OUTPUT"
+                      else
+                          echo "tag=" >> "$GITHUB_OUTPUT"
+                          echo "skip=true" >> "$GITHUB_OUTPUT"
+                      fi
+                  else
+                      # Manual dispatch on a branch: artifact-only build of that ref.
+                      echo "tag=" >> "$GITHUB_OUTPUT"
+                      echo "skip=false" >> "$GITHUB_OUTPUT"
+                  fi
+
     webapp:
         name: Build web app
         runs-on: ubuntu-latest
+        needs: gate
+        if: needs.gate.outputs.skip == 'false'
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
               with:
                   persist-credentials: false
+                  ref: ${{ needs.gate.outputs.tag || github.ref }}
 
             - uses: pnpm/setup@fa36a5ef7dcdefc3a7cb25655c122e00cf6e636e # v3.1.2
               with:
@@ -45,9 +91,11 @@ jobs:
                   install: false
 
             - name: Determine version
+              env:
+                  TAG: ${{ needs.gate.outputs.tag }}
               run: |
-                  if [[ $GITHUB_REF_NAME == ninho-v* ]]; then
-                      echo "VERSION=${GITHUB_REF_NAME#ninho-v}" >> "$GITHUB_ENV"
+                  if [ -n "$TAG" ]; then
+                      echo "VERSION=${TAG#ninho-v}" >> "$GITHUB_ENV"
                   else
                       echo "VERSION=$(node -p "require('./apps/desktop/package.json').version")" >> "$GITHUB_ENV"
                   fi
@@ -86,7 +134,7 @@ jobs:
     installer:
         name: Build Windows x64 installer
         runs-on: windows-latest
-        needs: webapp
+        needs: [gate, webapp]
         steps:
             # Tweak line endings to make nx happy, workaround for https://github.com/nrwl/nx/issues/35828
             - name: Configure git line endings
@@ -97,6 +145,7 @@ jobs:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
               with:
                   persist-credentials: false
+                  ref: ${{ needs.gate.outputs.tag || github.sha }}
 
             - name: Download webapp
               uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
@@ -111,9 +160,11 @@ jobs:
                   install: false
 
             - name: Determine version
+              env:
+                  TAG: ${{ needs.gate.outputs.tag }}
               run: |
-                  if [[ $GITHUB_REF_NAME == ninho-v* ]]; then
-                      echo "VERSION=${GITHUB_REF_NAME#ninho-v}" >> "$GITHUB_ENV"
+                  if [ -n "$TAG" ]; then
+                      echo "VERSION=${TAG#ninho-v}" >> "$GITHUB_ENV"
                   else
                       echo "VERSION=$(node -p "require('./apps/desktop/package.json').version")" >> "$GITHUB_ENV"
                   fi
@@ -158,10 +209,11 @@ jobs:
                   if-no-files-found: error
 
             - name: Create release, attach installer and publish update feed
-              if: startsWith(github.ref, 'refs/tags/ninho-v')
+              if: needs.gate.outputs.tag != ''
               env:
                   GH_TOKEN: ${{ github.token }}
                   REPO: ${{ github.repository }}
+                  TAG: ${{ needs.gate.outputs.tag }}
               run: |
                   cd apps/desktop/dist/squirrel-windows*/
 
@@ -171,10 +223,10 @@ jobs:
                   NUPKG=$(ls *-full.nupkg)
                   SHA1=$(sha1sum "$NUPKG" | cut -d' ' -f1)
                   SIZE=$(stat -c%s "$NUPKG")
-                  echo "$SHA1 https://github.com/$REPO/releases/download/$GITHUB_REF_NAME/$NUPKG $SIZE" > RELEASES
+                  echo "$SHA1 https://github.com/$REPO/releases/download/$TAG/$NUPKG $SIZE" > RELEASES
 
-                  gh release create "$GITHUB_REF_NAME" \
-                      --title "Ninho ${GITHUB_REF_NAME#ninho-}" \
+                  gh release create "$TAG" \
+                      --title "Ninho ${TAG#ninho-}" \
                       --generate-notes \
                       "$NUPKG" *Setup*.exe
 
@@ -186,7 +238,7 @@ jobs:
                       gh api --method POST "repos/$REPO/git/refs" -f ref=refs/heads/ninho-update -f sha="$DEFAULT_SHA"
                   fi
                   FEED_SHA=$(gh api "repos/$REPO/contents/win32/x64/RELEASES?ref=ninho-update" --jq .sha 2>/dev/null || true)
-                  ARGS=(--method PUT "repos/$REPO/contents/win32/x64/RELEASES" -f message="Ninho update feed $GITHUB_REF_NAME" -f content="$(base64 -w0 RELEASES)" -f branch=ninho-update)
+                  ARGS=(--method PUT "repos/$REPO/contents/win32/x64/RELEASES" -f message="Ninho update feed $TAG" -f content="$(base64 -w0 RELEASES)" -f branch=ninho-update)
                   if [ -n "$FEED_SHA" ]; then
                       ARGS+=(-f sha="$FEED_SHA")
                   fi
