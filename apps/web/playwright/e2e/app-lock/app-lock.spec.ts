@@ -5,7 +5,7 @@
  * Please see LICENSE files in the repository root for full details.
  */
 
-import { rejectToast, closeReleaseAnnouncementIfExists } from "@element-hq/element-web-playwright-common";
+import { rejectToast } from "@element-hq/element-web-playwright-common";
 
 import { type Page, expect } from "@playwright/test";
 
@@ -64,20 +64,14 @@ test.describe("App lock", () => {
         await expect(lockScreen).not.toBeVisible();
     });
 
-    test("should lock via the room header button", async ({ app, page }) => {
-        // The lock button lives in the room header, so a room must be open
-        await app.client.createRoom({ name: "App lock room" });
-        await closeReleaseAnnouncementIfExists(page, "Introducing Sections");
-        await app.viewRoomByName("App lock room");
-
+    test("should lock via the sidebar lock button", async ({ app, page }) => {
         await app.settings.openUserSettings("Security");
         const tab = page.locator(".mx_UserSettingsDialog");
 
         await tab.getByRole("button", { name: "Enable app lock" }).click();
         await setCode(page, "1234");
 
-        // Close settings so the room header is reachable and the header button is the only
-        // "Lock now" button on screen
+        // Close settings so the sidebar lock button is the only "Lock now" button on screen
         await tab.getByRole("button", { name: "Close dialog", exact: true }).click();
         await expect(tab).not.toBeVisible();
 

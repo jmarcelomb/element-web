@@ -63,8 +63,6 @@ import { SettingLevel } from "../../../../settings/SettingLevel";
 import { ElementCallMemberEventType } from "../../../../call-types";
 import { SDKContext } from "../../../../contexts/SDKContext";
 import { SDKContextClass } from "../../../../contexts/SDKContextClass.ts";
-import AppLock, { AppLockState } from "../../../../app-lock/AppLock";
-import * as verifier from "../../../../app-lock/verifier";
 
 vi.mock("../../../../utils/ShieldUtils");
 vi.mock("../../../../hooks/right-panel/useCurrentPhase", () => ({
@@ -73,17 +71,6 @@ vi.mock("../../../../hooks/right-panel/useCurrentPhase", () => ({
     },
 }));
 vi.mock("../../../../Modal");
-// Real verifier, but operate directly on its storage helpers so tests don't pay the 600k
-// PBKDF2 iterations for every scenario.
-vi.mock("../../../../app-lock/verifier", async (importOriginal) => {
-    const original = await importOriginal<typeof import("../../../../app-lock/verifier")>();
-    return {
-        ...original,
-        setAppLockCode: vi.fn().mockResolvedValue(undefined),
-        verifyAppLockCode: vi.fn().mockResolvedValue(true),
-        clearAppLockCode: vi.fn(),
-    };
-});
 
 describe("RoomHeader", () => {
     filterConsole(
@@ -136,12 +123,6 @@ describe("RoomHeader", () => {
         vi.spyOn(CallStore.instance, "getCall").mockReturnValue(null);
         vi.spyOn(CallStore.instance, "getConfiguredRTCTransports").mockReturnValue([]);
 
-        // vi.resetAllMocks() in afterEach disarms the module-level verifier mocks; re-arm
-        // them so any verify-dependent behaviour added later doesn't fail confusingly.
-        vi.mocked(verifier.setAppLockCode).mockResolvedValue(undefined);
-        vi.mocked(verifier.verifyAppLockCode).mockResolvedValue(true);
-        vi.mocked(verifier.clearAppLockCode).mockReturnValue(undefined);
-
         // Reset the mock RoomViewStore
         mockRoomViewStore.isViewingCall.mockReturnValue(false);
 
@@ -156,7 +137,6 @@ describe("RoomHeader", () => {
     afterEach(() => {
         vi.resetAllMocks();
         SettingsStore.reset();
-        AppLock.stop();
     });
 
     it("renders the room header", () => {
@@ -251,22 +231,6 @@ describe("RoomHeader", () => {
 
         await user.click(getByLabelText(document.body, "Notifications"));
         expect(setCardSpy).toHaveBeenCalledWith({ phase: RightPanelPhases.NotificationPanel });
-    });
-
-    it("does not show a lock button when app lock is disabled", () => {
-        render(<RoomHeader room={room} />, getWrapper());
-        expect(queryByLabelText(document.body, "Lock now")).toBeNull();
-    });
-
-    it("locks the app when the header lock button is clicked", async () => {
-        const user = userEvent.setup();
-        // setCode (rather than enable) turns app lock on without touching the settings store
-        await AppLock.setCode("1234");
-        expect(AppLock.getState()).toBe(AppLockState.Unlocked);
-
-        render(<RoomHeader room={room} />, getWrapper());
-        await user.click(getByLabelText(document.body, "Lock now"));
-        expect(AppLock.getState()).toBe(AppLockState.Locked);
     });
 
     it("should show both call buttons in rooms smaller than 3 members", async () => {

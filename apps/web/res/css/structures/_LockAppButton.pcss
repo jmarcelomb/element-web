@@ -1,0 +1,44 @@
+/*
+Copyright 2026 Marcelo Borges
+
+SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial
+Please see LICENSE in the repository root for full details.
+*/
+
+.mx_LockAppButton {
+    /* !important override compound */
+    border-radius: 8px !important;
+    margin: 18px auto auto auto;
+
+    svg {
+        fill: $secondary-content;
+    }
+
+    &:hover {
+        /**
+         * override compound default background color when hovered, aligning
+         * with the other rail buttons
+         */
+        background-color: $quaternary-content !important;
+        color: $primary-content;
+    }
+
+    &.expanded {
+        /**
+         * override compound default background color when hovered, aligning
+         * with the other rail buttons
+         */
+        background-color: transparent !important;
+
+        /* align with settings icon */
+        margin-left: 21px;
+        margin-right: 8px;
+        width: 100%;
+        display: flex;
+        justify-content: flex-start;
+
+        &:hover {
+            background-color: $quaternary-content !important;
+        }
+    }
+}
